@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">页声</string>
+    <string name="notification_channel_export">音频导出</string>
+    <string name="notification_channel_export_description">朗读与合并有声书音频</string>
+    <string name="notification_export_title">正在生成有声书</string>
+</resources>
