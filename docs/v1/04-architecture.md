@@ -128,6 +128,7 @@ Presentation -> State -> Domain -> Platform abstraction
 | 领域 | `WavMerger` | 校验并合并 PCM WAV | WorkManager 调度 |
 | 平台 | `BookRepository` | 文件复制、JSON 持久化、进度 | 页面显示 |
 | 平台 | `ReaderTtsController` | 系统 TTS 生命周期与回调 | 句子切分 |
+| 平台 | `TtsVoiceSelector` | 本地声库匹配与音高降级 | 业务页面状态 |
 | 平台 | `AudioExportWorker` | 后台合成、MediaStore 输出 | 阅读界面状态 |
 
 ## 5. 核心数据模型
@@ -215,6 +216,8 @@ classDiagram
 | 书籍删除 / 进度写入 | Repository `Mutex` + AtomicFile |
 
 `ReaderViewModel` 销毁时释放前台 TTS；后台音频导出不受阅读页关闭影响，由 WorkManager 管理。
+
+声线选择由 `ReaderVoicePreset`、`VoiceNameClassifier` 和 `TtsVoiceSelector` 组成：前者是跨 UI、偏好与导出任务共享的稳定语义；后两者优先解释系统声库名称，无法获得明确性别声库时以音高降级。Android 没有标准 Voice.gender 字段，因此界面文案不能承诺厂商声库一定标注为男声或女声。
 
 ## 7. 持久化
 

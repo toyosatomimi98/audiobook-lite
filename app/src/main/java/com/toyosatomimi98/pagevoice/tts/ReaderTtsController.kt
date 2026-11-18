@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.toyosatomimi98.pagevoice.data.ReaderVoicePreset
 import java.util.Locale
 
 class ReaderTtsController(
@@ -36,7 +37,12 @@ class ReaderTtsController(
         }
     }
 
-    fun speak(text: String, utteranceId: String, localeHint: Locale): Boolean {
+    fun speak(
+        text: String,
+        utteranceId: String,
+        localeHint: Locale,
+        voicePreset: ReaderVoicePreset,
+    ): Boolean {
         if (!isReady) return false
         val tts = engine ?: return false
         val languageResult = tts.setLanguage(localeHint)
@@ -46,6 +52,7 @@ class ReaderTtsController(
             onError("当前语音引擎不支持这本书的语言。可在系统“文字转语音”设置中安装对应语音包。")
             return false
         }
+        TtsVoiceSelector.apply(tts, localeHint, voicePreset)
         tts.speechRate = speechRate
         val mode = tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
         return mode == TextToSpeech.SUCCESS

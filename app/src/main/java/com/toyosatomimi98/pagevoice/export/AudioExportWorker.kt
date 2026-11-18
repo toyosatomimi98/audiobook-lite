@@ -18,8 +18,10 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.toyosatomimi98.pagevoice.PageVoiceApplication
 import com.toyosatomimi98.pagevoice.R
+import com.toyosatomimi98.pagevoice.data.ReaderVoicePreset
 import com.toyosatomimi98.pagevoice.data.SentenceTokenizer
 import com.toyosatomimi98.pagevoice.tts.ReaderTtsController
+import com.toyosatomimi98.pagevoice.tts.TtsVoiceSelector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -37,6 +39,7 @@ class AudioExportWorker(
 
     override suspend fun doWork(): Result {
         val bookId = inputData.getString(KEY_BOOK_ID) ?: return Result.failure()
+        val voicePreset = ReaderVoicePreset.fromId(inputData.getString(KEY_VOICE_PRESET))
         val book = repository.findBook(bookId) ?: return Result.failure(
             Data.Builder().putString(KEY_ERROR, "找不到这本书。").build(),
         )
@@ -77,6 +80,9 @@ class AudioExportWorker(
                 ) {
                     throw IllegalStateException("当前语音引擎缺少${language.displayName}语音包。")
                 }
+                withContext(Dispatchers.Main) {
+                    TtsVoiceSelector.apply(engine, language, voicePreset)
+                }
 
                 val file = File(temporaryDirectory, "segment-${index.toString().padStart(5, '0')}.wav")
                 synthesize(engine, chunk, file, "pagevoice-export-$index")
@@ -84,7 +90,7 @@ class AudioExportWorker(
                 audioFiles += file
             }
 
-            val displayName = safeFileName("${book.title} · 页声朗读.wav")
+            val displayName = safeFileName("${book.title} · 页声${voicePreset.label}朗读.wav")
             val createdDestination = createDestination(displayName)
             destination = createdDestination
             openDestinationStream(createdDestination).use { output ->
@@ -305,6 +311,7 @@ class AudioExportWorker(
 
     companion object {
         const val KEY_BOOK_ID = "book_id"
+        const val KEY_VOICE_PRESET = "voice_preset"
         const val KEY_PROGRESS = "progress"
         const val KEY_TOTAL = "total"
         const val KEY_OUTPUT_URI = "output_uri"

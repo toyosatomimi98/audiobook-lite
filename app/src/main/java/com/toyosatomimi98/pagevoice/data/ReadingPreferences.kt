@@ -26,9 +26,16 @@ class ReadingPreferences(context: Context) {
             preferences.edit().putFloat(KEY_SPEECH_RATE, value.coerceIn(0.5f, 2f)).apply()
         }
 
+    var voicePreset: ReaderVoicePreset
+        get() = ReaderVoicePreset.fromId(preferences.getString(KEY_VOICE_PRESET, null))
+        set(value) {
+            preferences.edit().putString(KEY_VOICE_PRESET, value.id).apply()
+        }
+
     private companion object {
         const val KEY_FONT_SCALE = "font_scale"
         const val KEY_LINE_SPACING = "line_spacing"
         const val KEY_SPEECH_RATE = "speech_rate"
+        const val KEY_VOICE_PRESET = "voice_preset"
     }
 }

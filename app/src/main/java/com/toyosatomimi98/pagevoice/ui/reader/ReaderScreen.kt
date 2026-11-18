@@ -53,6 +53,7 @@ import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.SkipPrevious
 import androidx.compose.material.icons.outlined.Speed
@@ -119,6 +120,7 @@ import com.toyosatomimi98.pagevoice.data.BookFormat
 import com.toyosatomimi98.pagevoice.data.TextRegion
 import com.toyosatomimi98.pagevoice.data.TocEntry
 import com.toyosatomimi98.pagevoice.data.ReadingPreferences
+import com.toyosatomimi98.pagevoice.data.ReaderVoicePreset
 import com.toyosatomimi98.pagevoice.ui.theme.Highlight
 import com.toyosatomimi98.pagevoice.ui.theme.HighlightStrong
 import com.toyosatomimi98.pagevoice.ui.theme.Ink
@@ -158,6 +160,7 @@ fun ReaderRoute(
         onNextSentence = readerViewModel::nextSentence,
         onStartAtOffset = readerViewModel::startPlaybackAt,
         onCycleSpeed = readerViewModel::cycleSpeed,
+        onVoicePreset = readerViewModel::setVoicePreset,
         onExportAudio = readerViewModel::startAudioExport,
         onMessageShown = readerViewModel::clearMessage,
     )
@@ -175,6 +178,7 @@ private fun ReaderScreen(
     onNextSentence: () -> Unit,
     onStartAtOffset: (Int) -> Unit,
     onCycleSpeed: () -> Unit,
+    onVoicePreset: (ReaderVoicePreset) -> Unit,
     onExportAudio: () -> Unit,
     onMessageShown: () -> Unit,
 ) {
@@ -186,6 +190,7 @@ private fun ReaderScreen(
     var tocVisible by rememberSaveable { mutableStateOf(false) }
     var jumpVisible by rememberSaveable { mutableStateOf(false) }
     var typeVisible by rememberSaveable { mutableStateOf(false) }
+    var voiceVisible by rememberSaveable { mutableStateOf(false) }
     var fontScale by rememberSaveable { mutableFloatStateOf(preferences.fontScale) }
     var lineSpacing by rememberSaveable { mutableFloatStateOf(preferences.lineSpacing) }
     var navigationRequest by remember { mutableStateOf<ReaderLocation?>(null) }
@@ -288,6 +293,8 @@ private fun ReaderScreen(
                 onToc = { tocVisible = true },
                 onJump = { jumpVisible = true },
                 onType = { typeVisible = true },
+                onVoice = { voiceVisible = true },
+                voicePreset = state.voicePreset,
                 onExport = { beginAudioExport() },
             )
         }
@@ -312,6 +319,7 @@ private fun ReaderScreen(
                 onNext = onNextSentence,
                 onCycleSpeed = onCycleSpeed,
                 onJump = { jumpVisible = true },
+                onVoice = { voiceVisible = true },
             )
         }
 
@@ -385,6 +393,13 @@ private fun ReaderScreen(
             onDismiss = { typeVisible = false },
         )
     }
+    if (voiceVisible) {
+        VoiceSheet(
+            currentPreset = state.voicePreset,
+            onSelect = onVoicePreset,
+            onDismiss = { voiceVisible = false },
+        )
+    }
 }
 
 @Composable
@@ -395,6 +410,8 @@ private fun ReaderTopBar(
     onToc: () -> Unit,
     onJump: () -> Unit,
     onType: () -> Unit,
+    onVoice: () -> Unit,
+    voicePreset: ReaderVoicePreset,
     onExport: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -463,6 +480,14 @@ private fun ReaderTopBar(
                         },
                     )
                     DropdownMenuItem(
+                        text = { Text("朗读声音 · ${voicePreset.label}") },
+                        leadingIcon = { Icon(Icons.Outlined.RecordVoiceOver, contentDescription = null) },
+                        onClick = {
+                            menuOpen = false
+                            onVoice()
+                        },
+                    )
+                    DropdownMenuItem(
                         text = { Text("导出整本音频") },
                         leadingIcon = { Icon(Icons.Outlined.Headphones, contentDescription = null) },
                         onClick = {
@@ -485,6 +510,7 @@ private fun ReaderTransport(
     onNext: () -> Unit,
     onCycleSpeed: () -> Unit,
     onJump: () -> Unit,
+    onVoice: () -> Unit,
 ) {
     Box(
         modifier = Modifier
@@ -546,6 +572,30 @@ private fun ReaderTransport(
                             style = MaterialTheme.typography.labelMedium,
                             color = PaperLight.copy(alpha = 0.65f),
                         )
+                        Spacer(Modifier.width(8.dp))
+                        Surface(
+                            onClick = onVoice,
+                            color = PaperLight.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(50),
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    Icons.Outlined.RecordVoiceOver,
+                                    contentDescription = null,
+                                    tint = PaperLight.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(13.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = state.voicePreset.label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = PaperLight,
+                                )
+                            }
+                        }
                     }
                     Spacer(Modifier.height(7.dp))
                     Row(
@@ -1112,6 +1162,99 @@ private fun JumpSheet(
                 Text("跳到这里")
             }
             Spacer(Modifier.height(18.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VoiceSheet(
+    currentPreset: ReaderVoicePreset,
+    onSelect: (ReaderVoicePreset) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = PaperLight,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(horizontal = 22.dp, vertical = 8.dp),
+        ) {
+            Text("朗读声音", style = MaterialTheme.typography.headlineSmall, color = Ink)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "优先使用系统已安装的对应声库；若设备只提供一个声库，会自动用音高形成两种声线。切换后会从当前句继续。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = InkSoft,
+            )
+            Spacer(Modifier.height(18.dp))
+            ReaderVoicePreset.entries.forEach { preset ->
+                val selected = currentPreset == preset
+                Surface(
+                    onClick = { onSelect(preset) },
+                    color = if (selected) PaperDeep else Paper,
+                    shape = RoundedCornerShape(20.dp),
+                    border = if (selected) {
+                        androidx.compose.foundation.BorderStroke(1.dp, Terracotta.copy(alpha = 0.45f))
+                    } else {
+                        null
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (selected) {
+                                        Terracotta.copy(alpha = 0.16f)
+                                    } else {
+                                        PaperDeep.copy(alpha = 0.75f)
+                                    },
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Outlined.RecordVoiceOver,
+                                contentDescription = null,
+                                tint = if (selected) Terracotta else InkSoft,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = preset.label,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Ink,
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = preset.description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = InkSoft,
+                            )
+                        }
+                        if (selected) {
+                            Icon(
+                                Icons.Outlined.Check,
+                                contentDescription = "当前声音",
+                                tint = Terracotta,
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
         }
     }
 }

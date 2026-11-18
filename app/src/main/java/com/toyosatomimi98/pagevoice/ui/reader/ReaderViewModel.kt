@@ -17,6 +17,7 @@ import com.toyosatomimi98.pagevoice.data.BookFormat
 import com.toyosatomimi98.pagevoice.data.LibraryBook
 import com.toyosatomimi98.pagevoice.data.ReadingProgress
 import com.toyosatomimi98.pagevoice.data.ReadingPreferences
+import com.toyosatomimi98.pagevoice.data.ReaderVoicePreset
 import com.toyosatomimi98.pagevoice.data.SentenceSpan
 import com.toyosatomimi98.pagevoice.data.SentenceTokenizer
 import com.toyosatomimi98.pagevoice.export.AudioExportWorker
@@ -39,6 +40,7 @@ data class ReaderUiState(
     val isPlaying: Boolean = false,
     val isTtsReady: Boolean = false,
     val speed: Float = 0.95f,
+    val voicePreset: ReaderVoicePreset = ReaderVoicePreset.FEMALE,
     val message: String? = null,
     val fatalError: String? = null,
 )
@@ -49,12 +51,19 @@ class ReaderViewModel(
 ) : AndroidViewModel(application) {
     private val repository = (application as PageVoiceApplication).bookRepository
     private val preferences = ReadingPreferences(application)
-    private val _uiState = MutableStateFlow(ReaderUiState(speed = preferences.speechRate))
+    private val _uiState = MutableStateFlow(
+        ReaderUiState(
+            speed = preferences.speechRate,
+            voicePreset = preferences.voicePreset,
+        ),
+    )
     val uiState: StateFlow<ReaderUiState> = _uiState.asStateFlow()
 
     private val sentenceCache = mutableMapOf<Int, List<SentenceSpan>>()
     private var currentSentenceIndex = -1
     private var playbackChapterIndex = -1
+    private var activeUtteranceId: String? = null
+    private var utteranceSequence = 0
     private var progressJob: Job? = null
     private var exportObserverJob: Job? = null
 
@@ -62,8 +71,7 @@ class ReaderViewModel(
         context = application,
         onReadyChanged = { ready -> _uiState.value = _uiState.value.copy(isTtsReady = ready) },
         onStart = { utteranceId ->
-            val expected = "$UTTERANCE_PREFIX$playbackChapterIndex-$currentSentenceIndex"
-            if (utteranceId == expected) {
+            if (utteranceId == activeUtteranceId) {
                 _uiState.value = _uiState.value.copy(isPlaying = true)
             }
         },
@@ -82,6 +90,7 @@ class ReaderViewModel(
         if (chapterIndex !in content.chapters.indices) return
         val wasPlaying = _uiState.value.isPlaying
         tts.stop()
+        activeUtteranceId = null
         currentSentenceIndex = -1
         playbackChapterIndex = -1
         _uiState.value = _uiState.value.copy(
@@ -119,6 +128,7 @@ class ReaderViewModel(
         val content = state.content ?: return
         if (state.isPlaying) {
             tts.stop()
+            activeUtteranceId = null
             currentSentenceIndex = -1
             playbackChapterIndex = -1
             _uiState.value = state.copy(
@@ -228,6 +238,22 @@ class ReaderViewModel(
         preferences.speechRate = next
     }
 
+    fun setVoicePreset(preset: ReaderVoicePreset) {
+        val state = _uiState.value
+        if (state.voicePreset == preset) return
+        preferences.voicePreset = preset
+        _uiState.value = state.copy(voicePreset = preset)
+
+        if (state.isPlaying &&
+            playbackChapterIndex >= 0 &&
+            currentSentenceIndex >= 0
+        ) {
+            tts.stop()
+            activeUtteranceId = null
+            speakSentence(playbackChapterIndex, currentSentenceIndex)
+        }
+    }
+
     fun jumpToFraction(fraction: Float) {
         val content = _uiState.value.content ?: return
         val safe = fraction.coerceIn(0f, 1f)
@@ -258,6 +284,7 @@ class ReaderViewModel(
         }
         if (state.isPlaying) {
             tts.stop()
+            activeUtteranceId = null
             currentSentenceIndex = -1
             playbackChapterIndex = -1
             _uiState.value = state.copy(
@@ -269,7 +296,10 @@ class ReaderViewModel(
         val workName = "audio-export-${book.id}"
         val request = OneTimeWorkRequestBuilder<AudioExportWorker>()
             .setInputData(
-                workDataOf(AudioExportWorker.KEY_BOOK_ID to book.id),
+                workDataOf(
+                    AudioExportWorker.KEY_BOOK_ID to book.id,
+                    AudioExportWorker.KEY_VOICE_PRESET to state.voicePreset.id,
+                ),
             )
             .build()
         WorkManager.getInstance(getApplication())
@@ -352,6 +382,9 @@ class ReaderViewModel(
                     content = content,
                     currentChapterIndex = saved.chapterIndex.coerceIn(content.chapters.indices),
                     charOffset = saved.charOffset.coerceAtLeast(0),
+                    isTtsReady = _uiState.value.isTtsReady,
+                    speed = preferences.speechRate,
+                    voicePreset = preferences.voicePreset,
                 )
             }.onFailure { error ->
                 _uiState.value = _uiState.value.copy(
@@ -385,13 +418,16 @@ class ReaderViewModel(
             isPlaying = true,
         )
 
-        val utteranceId = "$UTTERANCE_PREFIX$chapter-$safeIndex"
+        utteranceSequence += 1
+        activeUtteranceId = "$UTTERANCE_PREFIX$chapter-$safeIndex-$utteranceSequence"
+        val utteranceId = checkNotNull(activeUtteranceId)
         val started = tts.speak(
             text = sentence.text,
             utteranceId = utteranceId,
             localeHint = ReaderTtsController.localeFor(
                 content.chapters[chapter].text.take(80),
             ),
+            voicePreset = _uiState.value.voicePreset,
         )
         if (!started) {
             _uiState.value = _uiState.value.copy(isPlaying = false)
@@ -400,8 +436,7 @@ class ReaderViewModel(
     }
 
     private fun handleTtsRange(utteranceId: String, start: Int, end: Int) {
-        val expected = "$UTTERANCE_PREFIX$playbackChapterIndex-$currentSentenceIndex"
-        if (utteranceId != expected) return
+        if (utteranceId != activeUtteranceId) return
         val sentence = _uiState.value.activeSentence ?: return
         val wordStart = (sentence.start + start).coerceIn(sentence.start, sentence.end)
         val wordEnd = (sentence.start + end).coerceIn(wordStart, sentence.end)
@@ -411,8 +446,7 @@ class ReaderViewModel(
     }
 
     private fun handleTtsDone(utteranceId: String) {
-        val expected = "$UTTERANCE_PREFIX$playbackChapterIndex-$currentSentenceIndex"
-        if (utteranceId != expected) return
+        if (utteranceId != activeUtteranceId) return
         val state = _uiState.value
         if (!state.isPlaying) return
         val content = state.content ?: return
@@ -424,6 +458,7 @@ class ReaderViewModel(
         }
         val next = nextNonEmptyChapter(chapterIndex)
         if (next == null) {
+            activeUtteranceId = null
             _uiState.value = state.copy(
                 isPlaying = false,
                 activeWordRange = null,
@@ -473,6 +508,7 @@ class ReaderViewModel(
 
     private fun showMessage(message: String) {
         tts.stop()
+        activeUtteranceId = null
         playbackChapterIndex = -1
         _uiState.value = _uiState.value.copy(
             message = message,

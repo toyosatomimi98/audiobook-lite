@@ -114,7 +114,8 @@ PDF 的显示与文字解析来自两个系统：`PdfRenderer` 负责显示，PD
 flowchart LR
     Visible[当前页字符偏移] --> Tokenize[章节句子切分]
     Tokenize --> Queue[定位当前句]
-    Queue --> Speak[系统 TTS speak]
+    Queue --> Voice[女声 / 男声声库选择]
+    Voice --> Speak[系统 TTS speak]
     Speak --> Start[onStart]
     Speak --> Range[onRangeStart]
     Speak --> Done[onDone]
@@ -135,12 +136,15 @@ flowchart LR
 - 用户手动滑页只改变可见位置；下一句开始时重新把页面带到播放位置。
 - 暂停会清空当前句高亮，下一次播放从当前可见页对应句开始。
 - `utteranceId` 同时编码章节与句子，旧回调不能污染新播放状态。
+- 女声/男声预设在播放中切换时，停止当前句并从该句用新声线重播。
 
 ### 降级矩阵
 
 | 引擎能力 | 表现 |
 | --- | --- |
 | 支持中英文语言包与 `onRangeStart` | 句级 + 词级高亮 |
+| 暴露名称明确的男/女本地声库 | 优先匹配声库，不再使用补偿音高 |
+| 只暴露通用声库 | 女声约 1.08、男声约 0.84，以音高形成两种声线 |
 | 仅支持语言包 | 句级高亮，页面继续跟随 |
 | 缺少语言包 | 中文提示用户安装对应系统语音 |
 | 拒绝初始化 | 阅读功能不受影响，仅禁用朗读 |
