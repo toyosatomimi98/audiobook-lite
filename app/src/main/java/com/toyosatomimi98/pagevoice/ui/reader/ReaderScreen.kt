@@ -82,7 +82,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -942,13 +941,11 @@ private fun PdfReaderPage(
         contentAlignment = Alignment.Center,
     ) {
         val requestedWidth = with(density) { maxWidth.roundToPx() }.coerceAtMost(1600)
-        val bitmap by produceState<Bitmap?>(
-            initialValue = null,
-            key1 = file.absolutePath,
-            key2 = pageIndex,
-            key3 = requestedWidth,
-        ) {
-            value = withContext(Dispatchers.IO) {
+        var bitmap by remember(file.absolutePath, pageIndex, requestedWidth) {
+            mutableStateOf<Bitmap?>(null)
+        }
+        LaunchedEffect(file.absolutePath, pageIndex, requestedWidth) {
+            bitmap = withContext(Dispatchers.IO) {
                 runCatching {
                     PdfPageRenderer.render(file, pageIndex, requestedWidth)
                 }.getOrNull()

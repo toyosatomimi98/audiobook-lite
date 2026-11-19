@@ -1,12 +1,12 @@
 package com.toyosatomimi98.pagevoice.data
 
 import android.content.Context
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import com.tom_roush.pdfbox.text.TextPosition
-import com.tom_roush.pdfbox.util.PDFBoxResourceLoader
 import java.io.File
 import kotlin.math.max
 import kotlin.math.min
@@ -19,7 +19,7 @@ class PdfBookParser(context: Context) {
 
         return PDDocument.load(file).use { document ->
             val pageList = document.pages
-            if (pageList.isEmpty) {
+            if (pageList.count == 0) {
                 throw IllegalArgumentException("PDF 中没有页面。")
             }
 
@@ -52,7 +52,7 @@ class PdfBookParser(context: Context) {
             runCatching {
                 collectOutline(
                     document,
-                    document.documentCatalog.documentOutline,
+                    document.documentCatalog.documentOutline?.firstChild,
                     depth = 0,
                     output = outline,
                 )
@@ -134,7 +134,7 @@ class PdfBookParser(context: Context) {
             val height = max(box.height, 1f)
             val left = textPositions.minOf { it.xDirAdj }
             val right = textPositions.maxOf { it.xDirAdj + it.widthDirAdj }
-            val top = textPositions.minOf { it.yDirAdj - it.heightDirAdj }
+            val top = textPositions.minOf { it.yDirAdj - it.heightDir }
             val bottom = textPositions.maxOf { it.yDirAdj }
 
             regions += TextRegion(

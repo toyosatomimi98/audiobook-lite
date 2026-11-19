@@ -53,7 +53,7 @@ class ReaderTtsController(
             return false
         }
         TtsVoiceSelector.apply(tts, localeHint, voicePreset)
-        tts.speechRate = speechRate
+        tts.setSpeechRate(speechRate)
         val mode = tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
         return mode == TextToSpeech.SUCCESS
     }
@@ -64,7 +64,7 @@ class ReaderTtsController(
 
     fun setSpeechRate(value: Float) {
         speechRate = value.coerceIn(0.5f, 2f)
-        engine?.speechRate = speechRate
+        engine?.setSpeechRate(speechRate)
     }
 
     fun shutdown() {
@@ -101,7 +101,7 @@ class ReaderTtsController(
                 mainHandler.post { onRange(utteranceId, start, end) }
             }
         })
-        tts.speechRate = speechRate
+        tts.setSpeechRate(speechRate)
     }
 
     companion object {
