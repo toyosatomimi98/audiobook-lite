@@ -37,6 +37,7 @@ data class LibraryBook(
     val format: BookFormat,
     val sourceFileName: String,
     val localFileName: String,
+    val sourceFingerprint: String? = null,
     val importedAt: Long,
     val lastOpenedAt: Long,
     val coverStyle: Int,

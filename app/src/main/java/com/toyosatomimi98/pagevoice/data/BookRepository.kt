@@ -67,6 +67,7 @@ class BookRepository(private val context: Context) {
             }
 
             val fallbackTitle = displayName.substringBeforeLast('.').ifBlank { "未命名文档" }
+            val sourceFingerprint = FileDigest.sha256(localFile)
             val parsedContent = when (format) {
                 BookFormat.PDF -> PdfBookParser(appContext).parse(localFile, fallbackTitle)
                 BookFormat.MARKDOWN, BookFormat.TEXT -> {
@@ -87,6 +88,7 @@ class BookRepository(private val context: Context) {
                 format = format,
                 sourceFileName = displayName,
                 localFileName = localFileName,
+                sourceFingerprint = sourceFingerprint,
                 importedAt = now,
                 lastOpenedAt = now,
                 coverStyle = (id.hashCode() and Int.MAX_VALUE) % 6,

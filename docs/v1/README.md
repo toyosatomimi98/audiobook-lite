@@ -58,6 +58,8 @@
 | PDF 原页与坐标 | 设计完成 / 待设备 | `PdfBookParser`、`PdfPageRenderer` |
 | TTS 同步状态机 | 设计完成 / 待设备 | `ReaderViewModel`、`ReaderTtsController` |
 | WAV 后台导出 | 设计完成 / 待设备 | `AudioExportWorker`、`WavMerger` |
+| Web 阅读与 PWA | 首版完成 / 静态验证 | `web/`、纯 JavaScript 哈希测试 |
+| 多设备进度同步 | 服务与 Web 完成 / Android 待接线 | `shared/`、`sync-server/` |
 | Windows / Ubuntu 构建入口 | 静态通过 | Gradle Wrapper、Make、Ubuntu Doctor、portability check |
 | Ubuntu 24.04 CI | 配置完成 / 待远端运行 | `.github/workflows/android-ci.yml` |
 | 静态配置 | 静态通过 | XML、TOML、UTF-8、包路径、Wrapper 结构 |

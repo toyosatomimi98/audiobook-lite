@@ -16,3 +16,7 @@ Thumbs.db
 *.swp
 *~
 .directory
+node_modules/
+sync-server/data/
+web/.cache/
+.edge-preview-*/

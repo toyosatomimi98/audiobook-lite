@@ -1,0 +1,119 @@
+openapi: 3.1.0
+info:
+  title: PageVoice Sync API
+  version: 0.1.0
+  description: Personal, self-hosted reading-progress sync for Android and Web.
+servers:
+  - url: http://127.0.0.1:8787
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/health:
+    get:
+      security: []
+      responses:
+        "200":
+          description: Server is running.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, service, serverTime]
+                properties:
+                  ok:
+                    type: boolean
+                  service:
+                    type: string
+                  serverTime:
+                    type: integer
+  /api/v1/progress:
+    get:
+      summary: Read all progress records in this personal workspace.
+      responses:
+        "200":
+          description: Progress snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [schemaVersion, serverTime, records]
+                properties:
+                  schemaVersion:
+                    const: 1
+                  serverTime:
+                    type: integer
+                  records:
+                    type: array
+                    items:
+                      $ref: ./progress-record.schema.json
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/progress/{bookKey}:
+    parameters:
+      - name: bookKey
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+    get:
+      responses:
+        "200":
+          description: Current progress record.
+        "404":
+          description: No progress is stored for this book.
+    put:
+      summary: Upsert a progress event.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - chapterIndex
+                - charOffset
+                - pageIndex
+                - percent
+                - clientUpdatedAt
+                - deviceId
+              properties:
+                chapterIndex:
+                  type: integer
+                  minimum: 0
+                charOffset:
+                  type: integer
+                  minimum: 0
+                pageIndex:
+                  type: integer
+                  minimum: 0
+                percent:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                clientUpdatedAt:
+                  type: integer
+                  minimum: 1
+                deviceId:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                baseRevision:
+                  type: integer
+                  minimum: 0
+      responses:
+        "200":
+          description: Accepted progress record.
+        "400":
+          description: Invalid request.
+        "409":
+          description: The server has a newer progress event.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Unauthorized:
+      description: Missing or invalid personal sync token.

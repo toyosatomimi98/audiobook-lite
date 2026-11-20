@@ -30,7 +30,8 @@
 | M0 | 工程骨架、数据模型、核心界面、TTS 与导出实现 | 代码完成，待编译 |
 | M1 | 在 Android API 26 与 API 35 模拟器首次构建和视觉回归 | pending |
 | M2 | 在 Android 兼容的鸿蒙手机、普通 Android 手机上验收 | pending |
-| M3 | 性能、无障碍、扫描 PDF OCR 与正式命名 | 未开始 |
+| M3 | Web/PWA、自托管进度同步与 Android 客户端接线 | Web 与服务首版完成 |
+| M4 | 性能、无障碍、扫描 PDF OCR 与正式命名 | 未开始 |
 
 ## 明确不做的事（当前阶段）
 

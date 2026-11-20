@@ -36,7 +36,10 @@ done < <(
         -type f \
         \( -name '*.kt' -o -name '*.kts' -o -name '*.sh' \
         -o -name '*.md' -o -name '*.xml' -o -name '*.yml' \
-        -o -name '*.yaml' -o -name '*.toml' -o -name 'Makefile' \
+        -o -name '*.yaml' -o -name '*.toml' -o -name '*.js' \
+        -o -name '*.mjs' -o -name '*.css' -o -name '*.html' \
+        -o -name '*.json' -o -name '*.webmanifest' -o -name '*.svg' \
+        -o -name 'Makefile' \
         -o -name 'gradlew' -o -name '.gitattributes' -o -name '.editorconfig' \) \
         -print0
 )

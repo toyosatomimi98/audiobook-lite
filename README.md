@@ -31,13 +31,24 @@ make build
 
 完整的 Ubuntu 配置见 [开发指南](docs/ubuntu-development.md)。可以先用 [示例文稿](samples/灯塔与纸页.md) 验证阅读和朗读流程。
 
+## Web 与同步
+
+仓库包含响应式 Web 阅读端和单用户自托管同步服务。Web 支持 Markdown/TXT、浏览器朗读和阅读进度同步，手机与电脑通过同一文件指纹对应同一本书。
+
+```bash
+node sync-server/src/server.mjs
+```
+
+打开 `http://127.0.0.1:8787`，同步设置使用启动时显示的个人令牌。协议、局域网访问和安全边界见 [同步框架](docs/sync-framework.md)。
+
 ## 当前进度
 
-当前版本是 `0.1.0-dev`。应用、设计文档和构建脚手架已经就位，下一步是首次 Android 构建和真机验收，具体项目见 [设备验收清单](docs/device-qa.md)。
+当前版本是 `0.1.0-dev`。Android、Web、设计文档和同步服务已经就位。下一步是首次 Android 构建、Android 网络同步接线和真机验收，具体项目见 [设备验收清单](docs/device-qa.md)。
 
 ## 文档
 
 - [第一版设计档案](docs/v1/README.md)：产品叙事、执行流水线、流程图和架构图。
+- [Web 与多设备同步框架](docs/sync-framework.md)：共享协议、自托管服务和冲突规则。
 - [开发日志](docs/development-log.md)：关键决策、实现记录和待验证问题。
 - [Ubuntu 24.04 开发指南](docs/ubuntu-development.md)：环境、SDK、模拟器和真机调试。
 

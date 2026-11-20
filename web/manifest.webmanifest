@@ -1,0 +1,18 @@
+{
+  "name": "页声 PageVoice",
+  "short_name": "页声",
+  "description": "手机与电脑共享进度的本地优先阅读器",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f7f1e6",
+  "theme_color": "#f7f1e6",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

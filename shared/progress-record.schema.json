@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pagevoice.local/schemas/progress-record.schema.json",
+  "title": "PageVoice reading progress",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bookKey",
+    "chapterIndex",
+    "charOffset",
+    "pageIndex",
+    "percent",
+    "clientUpdatedAt",
+    "serverUpdatedAt",
+    "revision",
+    "deviceId"
+  ],
+  "properties": {
+    "bookKey": {
+      "type": "string",
+      "description": "Lowercase SHA-256 of the original source file bytes.",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "chapterIndex": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "charOffset": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pageIndex": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "clientUpdatedAt": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Device event time in Unix milliseconds."
+    },
+    "serverUpdatedAt": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Server acceptance time in Unix milliseconds."
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "deviceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    }
+  }
+}
